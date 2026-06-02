@@ -1,4 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import BudgetSummary from '../components/BudgetSummary'
+import ExpenseForm from '../components/ExpenseForm'
+import GraphSection from '../components/GraphSection'
+import { useBudgetContext } from '../context/BudgetContext.jsx'
+import { useExpenseContext } from '../context/ExpenseContext.jsx'
 
 const createExpense = () => ({
   id: crypto.randomUUID(),
@@ -8,28 +13,12 @@ const createExpense = () => ({
   description: '',
 })
 
-const formatCurrency = (value) =>
-  new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
-
 export default function DashboardPage() {
-  const [budget, setBudget] = useState('')
-  const [expenses, setExpenses] = useState([createExpense(), createExpense()])
+  const { budgetState, setBudgetState } = useBudgetContext()
+  const { expenseState, setExpenseState } = useExpenseContext()
 
-  const categories = [
-    'Food',
-    'Business',
-    'Travel',
-    'Clothes',
-    'Entertainment',
-    'Education',
-    'Health',
-    'Bills',
-    'Other',
-  ]
+  const budget = budgetState.dashboardBudget
+  const expenses = expenseState.expenses
 
   const totalBudget = Number(budget) || 0
 
@@ -44,21 +33,26 @@ export default function DashboardPage() {
   const remainingBudget = totalBudget - totalExpenses
 
   const updateExpense = (id, field, value) => {
-    setExpenses((currentExpenses) =>
-      currentExpenses.map((expense) =>
+    setExpenseState((state) => ({
+      ...state,
+      expenses: state.expenses.map((expense) =>
         expense.id === id ? { ...expense, [field]: value } : expense,
       ),
-    )
+    }))
   }
 
   const addExpenseRow = () => {
-    setExpenses((currentExpenses) => [...currentExpenses, createExpense()])
+    setExpenseState((state) => ({
+      ...state,
+      expenses: [...state.expenses, createExpense()],
+    }))
   }
 
   const deleteExpenseRow = (id) => {
-    setExpenses((currentExpenses) =>
-      currentExpenses.filter((expense) => expense.id !== id),
-    )
+    setExpenseState((state) => ({
+      ...state,
+      expenses: state.expenses.filter((expense) => expense.id !== id),
+    }))
   }
 
   return (
@@ -78,103 +72,34 @@ export default function DashboardPage() {
         </select>
       </section>
 
-      <section className="budget-summary" aria-label="Budget summary">
-        <article className="summary-card">
-          <h2>Total Budget</h2>
-          <label className="budget-input">
-            Budget:
-            <input
-              aria-label="Budget amount"
-              min="0"
-              onChange={(event) => setBudget(event.target.value)}
-              placeholder="18000"
-              type="number"
-              value={budget}
-            />
-          </label>
-          <p>{formatCurrency(totalBudget)}</p>
-        </article>
+      <BudgetSummary
+        budget={budget}
+        onBudgetChange={(value) =>
+          setBudgetState((state) => ({ ...state, dashboardBudget: value }))
+        }
+        remainingBudget={remainingBudget}
+        totalBudget={totalBudget}
+        totalExpenses={totalExpenses}
+      />
 
-        <article className="summary-card">
-          <h2>Total Expenses</h2>
-          <p>{formatCurrency(totalExpenses)}</p>
-        </article>
+      {expenses.length > 0 ? (
+        <ExpenseForm
+          expenses={expenses}
+          onAddExpense={addExpenseRow}
+          onDeleteExpense={deleteExpenseRow}
+          onUpdateExpense={updateExpense}
+        />
+      ) : (
+        <section className="empty-state">
+          <h2>No expenses found.</h2>
+          <p>Add your first expense to start tracking spending.</p>
+          <button className="primary-button" type="button" onClick={addExpenseRow}>
+            Add first expense
+          </button>
+        </section>
+      )}
 
-        <article className="summary-card">
-          <h2>Remaining Budget</h2>
-          <p>{formatCurrency(remainingBudget)}</p>
-        </article>
-      </section>
-
-      <section className="expense-entry" aria-label="Expense entry">
-        {expenses.map((expense, index) => (
-          <div className="expense-row" key={expense.id}>
-            <input
-              aria-label={`Amount ${index + 1}`}
-              min="0"
-              onChange={(event) => updateExpense(expense.id, 'amount', event.target.value)}
-              placeholder="Amount"
-              type="number"
-              value={expense.amount}
-            />
-
-            <select
-              aria-label={`Category ${index + 1}`}
-              onChange={(event) => updateExpense(expense.id, 'category', event.target.value)}
-              value={expense.category}
-            >
-              <option value="" disabled>
-                Category
-              </option>
-              {categories.map((category) => (
-                <option key={category}>{category}</option>
-              ))}
-            </select>
-
-            <input
-              aria-label={`Date ${index + 1}`}
-              onChange={(event) => updateExpense(expense.id, 'date', event.target.value)}
-              type="date"
-              value={expense.date}
-            />
-            <input
-              aria-label={`Description ${index + 1}`}
-              onChange={(event) =>
-                updateExpense(expense.id, 'description', event.target.value)
-              }
-              placeholder="Description"
-              type="text"
-              value={expense.description}
-            />
-            <button
-              className="delete-expense-button"
-              onClick={() => deleteExpenseRow(expense.id)}
-              type="button"
-              aria-label={`Delete expense row ${index + 1}`}
-            >
-              x
-            </button>
-          </div>
-        ))}
-
-        <button
-          className="add-expense-button"
-          onClick={addExpenseRow}
-          type="button"
-          aria-label="Add expense row"
-        >
-          +
-        </button>
-      </section>
-
-      <section className="graph-area" aria-label="Graphs">
-        <div className="graph-tabs">
-          <button type="button">Pie Chart</button>
-          <button type="button">Line Chart</button>
-        </div>
-
-        <div className="graph-placeholder">Graph Placeholder</div>
-      </section>
+      <GraphSection />
     </div>
   )
 }

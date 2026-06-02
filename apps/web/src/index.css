@@ -6,18 +6,50 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --surface: #ffffff;
+  --background: #f7f8fb;
+  --text: #18202f;
+  --muted: #526071;
+  --border: #e3e7ef;
+  --brand: #1557b0;
+  --danger: #be123c;
+  --success: #0f9f6e;
+  --surface-strong: #edf4ff;
+  --shadow: rgba(16, 24, 40, 0.08);
+}
+
+[data-theme='dark'] {
+  --surface: #111827;
+  --background: #0f172a;
+  --text: #f8fafc;
+  --muted: #cbd5e1;
+  --border: #334155;
+  --brand: #93c5fd;
+  --danger: #f87171;
+  --success: #34d399;
+  --surface-strong: #1f2937;
+  --shadow: rgba(15, 23, 42, 0.7);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
+  color: var(--text);
+  background: var(--background);
 }
 
 h1 {
-  color: #101827;
+  color: var(--text);
   font-size: 32px;
   line-height: 1.2;
   margin: 0;
