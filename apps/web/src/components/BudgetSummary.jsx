@@ -1,3 +1,5 @@
+import { useExpenseContext } from '../context/ExpenseContext.jsx'
+
 const formatCurrency = (value) =>
   new Intl.NumberFormat('en-IN', {
     style: 'currency',
@@ -12,6 +14,17 @@ export default function BudgetSummary({
   totalBudget,
   totalExpenses,
 }) {
+  const { expenseState } = useExpenseContext()
+  const expenses = expenseState.expenses || []
+
+  const breakdown = expenses.reduce((acc, e) => {
+    const cat = e.category || 'Other'
+    const amt = Number(e.amount) || 0
+    acc[cat] = (acc[cat] || 0) + amt
+    return acc
+  }, {})
+
+  const breakdownEntries = Object.entries(breakdown)
   return (
     <section className="budget-summary" aria-label="Budget summary">
       <article className="summary-card">
@@ -33,6 +46,16 @@ export default function BudgetSummary({
       <article className="summary-card">
         <h2>Total Expenses</h2>
         <p>{formatCurrency(totalExpenses)}</p>
+        {breakdownEntries.length > 0 && (
+          <ul className="expense-breakdown">
+            {breakdownEntries.map(([cat, amt]) => (
+              <li key={cat}>
+                <span>{cat}</span>
+                <span>{formatCurrency(amt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </article>
 
       <article className="summary-card">

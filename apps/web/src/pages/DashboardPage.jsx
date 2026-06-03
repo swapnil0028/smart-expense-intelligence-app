@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import BudgetSummary from '../components/BudgetSummary'
 import ExpenseForm from '../components/ExpenseForm'
 import GraphSection from '../components/GraphSection'
@@ -16,6 +16,7 @@ const createExpense = () => ({
 export default function DashboardPage() {
   const { budgetState, setBudgetState } = useBudgetContext()
   const { expenseState, setExpenseState } = useExpenseContext()
+  const [saveStatus, setSaveStatus] = useState('')
 
   const budget = budgetState.dashboardBudget
   const expenses = expenseState.expenses
@@ -53,6 +54,106 @@ export default function DashboardPage() {
       ...state,
       expenses: state.expenses.filter((expense) => expense.id !== id),
     }))
+  }
+
+  const hasUnsaved = expenses.some((e) => !e.id || e.id.length !== 24)
+
+  // Load expenses from backend on mount
+  useEffect(() => {
+    async function loadExpenses() {
+      try {
+        const res = await fetch('/api/expenses')
+        if (!res.ok) return
+        const data = await res.json()
+        const normalized = data.map((e) => ({
+          id: e._id || e.id || crypto.randomUUID(),
+          amount: e.amount,
+          category: e.category,
+          date: e.date ? e.date.split('T')[0] : '',
+          description: e.description || '',
+        }))
+        setExpenseState((state) => ({ ...state, expenses: normalized }))
+      } catch (err) {
+        console.error('Failed to load expenses from API', err)
+      }
+    }
+
+    loadExpenses()
+  }, [setExpenseState])
+
+  // Save any local-only expenses (those with non-mongo ids)
+  const saveExpenses = async () => {
+    setSaveStatus('')
+    const unsaved = expenses.filter((e) => !e.id || e.id.length !== 24)
+    if (unsaved.length === 0) {
+      setSaveStatus('No new expenses to save')
+      return
+    }
+
+    let saveError = false
+
+    for (const e of unsaved) {
+      try {
+        const payload = {
+          amount: Number(e.amount) || 0,
+          category: e.category,
+          description: e.description,
+          date: e.date,
+        }
+        const res = await fetch('/api/expenses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+
+        if (!res.ok) {
+          const text = await res.text()
+          console.error('Expense save failed:', res.status, text)
+          saveError = true
+          continue
+        }
+
+        const saved = await res.json()
+        setExpenseState((state) => ({
+          ...state,
+          expenses: state.expenses.map((ex) =>
+            ex.id === e.id
+              ? {
+                  id: saved._id || ex.id,
+                  amount: saved.amount,
+                  category: saved.category,
+                  date: saved.date ? saved.date.split('T')[0] : '',
+                  description: saved.description || '',
+                }
+              : ex,
+          ),
+        }))
+      } catch (err) {
+        console.error('Expense save error:', err)
+        saveError = true
+      }
+    }
+
+    try {
+      const resAll = await fetch('/api/expenses')
+      if (resAll.ok) {
+        const all = await resAll.json()
+        const normalized = all.map((e) => ({
+          id: e._id || e.id || crypto.randomUUID(),
+          amount: e.amount,
+          category: e.category,
+          date: e.date ? e.date.split('T')[0] : '',
+          description: e.description || '',
+        }))
+        setExpenseState((state) => ({ ...state, expenses: normalized }))
+        setSaveStatus(saveError ? 'Saved with some errors' : 'Expenses saved successfully')
+      } else {
+        setSaveStatus('Failed to refresh saved expenses')
+      }
+    } catch (err) {
+      console.error('Expense reload error:', err)
+      setSaveStatus('Failed to refresh expenses')
+    }
   }
 
   return (
@@ -97,6 +198,19 @@ export default function DashboardPage() {
             Add first expense
           </button>
         </section>
+      )}
+
+      {hasUnsaved && (
+        <div style={{ margin: '12px 0' }}>
+          <button className="primary-button" type="button" onClick={saveExpenses}>
+            Save Expenses
+          </button>
+          {saveStatus && (
+            <p className="save-status" style={{ marginTop: '8px' }}>
+              {saveStatus}
+            </p>
+          )}
+        </div>
       )}
 
       <GraphSection />
