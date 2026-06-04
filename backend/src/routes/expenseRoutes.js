@@ -7,6 +7,7 @@ import {
 	deleteExpense,
 } from '../controllers/expenseController.js'
 import validateRequest from '../middleware/validateRequest.js'
+import authMiddleware from '../middleware/authMiddleware.js'
 
 const router = express.Router()
 
@@ -23,6 +24,8 @@ const updateValidators = [
 	check('description').optional().isString(),
 	check('date').optional().isISO8601().withMessage('date must be ISO8601'),
 ]
+
+router.use(authMiddleware)
 
 router.post('/', createValidators, validateRequest, createExpense)
 router.get('/', getExpenses)

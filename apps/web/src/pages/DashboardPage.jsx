@@ -4,6 +4,7 @@ import ExpenseForm from '../components/ExpenseForm'
 import GraphSection from '../components/GraphSection'
 import { useBudgetContext } from '../context/BudgetContext.jsx'
 import { useExpenseContext } from '../context/ExpenseContext.jsx'
+import { useAuthContext } from '../context/AuthContext.jsx'
 
 const createExpense = () => ({
   id: crypto.randomUUID(),
@@ -20,6 +21,7 @@ export default function DashboardPage() {
 
   const budget = budgetState.dashboardBudget
   const expenses = expenseState.expenses
+  const { token } = useAuthContext()
 
   const totalBudget = Number(budget) || 0
 
@@ -62,7 +64,11 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadExpenses() {
       try {
-        const res = await fetch('/api/expenses')
+        const res = await fetch('/api/expenses', {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : '',
+          },
+        })
         if (!res.ok) return
         const data = await res.json()
         const normalized = data.map((e) => ({
@@ -102,7 +108,10 @@ export default function DashboardPage() {
         }
         const res = await fetch('/api/expenses', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: token ? `Bearer ${token}` : '',
+          },
           body: JSON.stringify(payload),
         })
 
@@ -135,7 +144,11 @@ export default function DashboardPage() {
     }
 
     try {
-      const resAll = await fetch('/api/expenses')
+      const resAll = await fetch('/api/expenses', {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+      })
       if (resAll.ok) {
         const all = await resAll.json()
         const normalized = all.map((e) => ({

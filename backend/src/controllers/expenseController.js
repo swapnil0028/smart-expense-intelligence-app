@@ -2,14 +2,13 @@ import Expense from '../models/Expense.js'
 
 export async function createExpense(req, res) {
   try {
-    const { amount, category, description, date, userId } = req.body
-
+    const { amount, category, description, date } = req.body
     const expense = new Expense({
       amount,
       category,
       description,
       date: date ? new Date(date) : undefined,
-      userId: userId || null,
+      userId: req.user.id,
     })
 
     await expense.save()
@@ -22,7 +21,7 @@ export async function createExpense(req, res) {
 
 export async function getExpenses(req, res) {
   try {
-    const expenses = await Expense.find().sort({ date: -1 })
+    const expenses = await Expense.find({ userId: req.user.id }).sort({ date: -1 })
     return res.json(expenses)
   } catch (err) {
     console.error('getExpenses error:', err)
@@ -36,7 +35,12 @@ export async function updateExpense(req, res) {
     const updates = { ...req.body }
     if (updates.date) updates.date = new Date(updates.date)
 
-    const expense = await Expense.findByIdAndUpdate(id, updates, { new: true })
+    const expense = await Expense.findOneAndUpdate(
+      { _id: id, userId: req.user.id },
+      updates,
+      { new: true },
+    )
+
     if (!expense) return res.status(404).json({ error: 'Expense not found' })
     return res.json(expense)
   } catch (err) {
@@ -48,7 +52,7 @@ export async function updateExpense(req, res) {
 export async function deleteExpense(req, res) {
   try {
     const { id } = req.params
-    const expense = await Expense.findByIdAndDelete(id)
+    const expense = await Expense.findOneAndDelete({ _id: id, userId: req.user.id })
     if (!expense) return res.status(404).json({ error: 'Expense not found' })
     return res.json({ message: 'Expense deleted' })
   } catch (err) {

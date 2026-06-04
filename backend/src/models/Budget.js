@@ -1,22 +1,30 @@
 import mongoose from 'mongoose'
 
 const budgetSchema = new mongoose.Schema({
-  month: {
-    type: String,
-    required: true,
-  },
-  limit: {
-    type: Number,
-    required: true,
-  },
-  spent: {
-    type: Number,
-    default: 0,
-  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+  },
+  category: {
+    type: String,
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+  },
+  month: {
+    type: Number,
+    required: true,
+  },
+  year: {
+    type: Number,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 })
 
