@@ -1,12 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState } from 'react'
-import { monthlyRecords } from '../data/mockHistory'
 
 const HistoryContext = createContext(null)
 
 export function HistoryProvider({ children }) {
   const [historyState, setHistoryState] = useState({
-    monthlyRecords,
+    monthlyRecords: [],
   })
 
   return (

@@ -4,6 +4,8 @@ import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 import statusRouter from './src/routes/index.js'
 import connectDB from './src/config/db.js'
+import analyticsRoutes from './analyticsRoutes.js'
+import expenseRoutes from './expenseRoutes.js'
 
 dotenv.config()
 
@@ -19,6 +21,8 @@ app.use(
 app.use(cookieParser())
 app.use(express.json())
 app.use('/api', statusRouter)
+app.use('/api/analytics', analyticsRoutes)
+app.use('/api/expenses', expenseRoutes)
 
 // connect to MongoDB (if MONGODB_URI provided)
 connectDB()

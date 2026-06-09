@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react'
 import BudgetSummary from '../components/BudgetSummary'
 import ExpenseForm from '../components/ExpenseForm'
-import GraphSection from '../components/GraphSection'
+import AnalyticsDashboard from '../components/AnalyticsDashboard'
 import { useBudgetContext } from '../context/BudgetContext.jsx'
 import { useExpenseContext } from '../context/ExpenseContext.jsx'
 import { useAuthContext } from '../context/AuthContext.jsx'
@@ -85,7 +85,7 @@ export default function DashboardPage() {
     }
 
     loadExpenses()
-  }, [setExpenseState])
+  }, [setExpenseState, token])
 
   // Save any local-only expenses (those with non-mongo ids)
   const saveExpenses = async () => {
@@ -226,7 +226,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <GraphSection />
+      <AnalyticsDashboard />
     </div>
   )
 }

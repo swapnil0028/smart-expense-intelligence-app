@@ -1,37 +1,51 @@
-import { useState } from 'react'
-import { useHistoryContext } from '../context/HistoryContext.jsx'
+import { useState, useEffect } from 'react'
 import ExpenseDetailsModal from '../components/ExpenseDetailsModal'
+import { useAuthContext } from '../context/AuthContext.jsx'
+import { getBudgets } from '../services/budgetService.js'
 
-const mockExpenses = [
-  {
-    id: '1',
-    category: 'Food',
-    amount: '₹500',
-    date: '03 June 2026',
-    notes: 'Lunch at the cafe',
-  },
-  {
-    id: '2',
-    category: 'Travel',
-    amount: '₹1,200',
-    date: '02 June 2026',
-    notes: 'Taxi ride to the airport',
-  },
-  {
-    id: '3',
-    category: 'Bills',
-    amount: '₹2,500',
-    date: '01 June 2026',
-    notes: 'Monthly utility bill',
-  },
-]
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default function HistoryPage() {
-  const { historyState } = useHistoryContext()
-  const [expenses, setExpenses] = useState(mockExpenses)
+  const [expenses, setExpenses] = useState([])
+  const [monthlyRecords, setMonthlyRecords] = useState([])
   const [selectedExpense, setSelectedExpense] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const { token } = useAuthContext()
 
-  const { monthlyRecords } = historyState
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [resRecent, resTrends, budgetsResult] = await Promise.all([
+          fetch('http://localhost:5001/api/analytics/recent'),
+          fetch('http://localhost:5001/api/analytics/trends'),
+          getBudgets(token),
+        ])
+        
+        const recentData = await resRecent.json()
+        const trendsData = await resTrends.json()
+        const budgets = budgetsResult.success ? budgetsResult.data : []
+
+        const groupedBudgets = budgets.reduce((acc, budget) => {
+          const key = `${budget.month}-${budget.year}`
+          acc[key] = (acc[key] || 0) + Number(budget.amount || 0)
+          return acc
+        }, {})
+
+        setExpenses(recentData)
+        setMonthlyRecords(trendsData.map((t) => ({
+          month: `${monthNames[t.month - 1]} ${t.year}`,
+          spent: `₹${t.totalAmount.toLocaleString()}`,
+          budget: groupedBudgets[`${t.month}-${t.year}`] || null,
+        })))
+      } catch (err) {
+        console.error('Failed to load history', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [token])
+
   const hasHistory = monthlyRecords.length > 0
 
   const handleOpenDetails = (expense) => setSelectedExpense(expense)
@@ -46,6 +60,8 @@ export default function HistoryPage() {
     window.alert('Edit is currently mocked. Replace this with a real edit flow.')
     setSelectedExpense(expense)
   }
+
+  if (loading) return <div className="p-8 text-center">Loading Records...</div>
 
   return (
     <section className="history-page">
@@ -63,7 +79,7 @@ export default function HistoryPage() {
                 <dl>
                   <div>
                     <dt>Budget</dt>
-                    <dd>{record.budget}</dd>
+                    <dd>{record.budget ? `₹${record.budget.toLocaleString()}` : 'Not set'}</dd>
                   </div>
                   <div>
                     <dt>Spent</dt>
@@ -96,13 +112,13 @@ export default function HistoryPage() {
                 <button
                   type="button"
                   className="expense-item-button"
-                  onClick={() => handleOpenDetails(expense)}
+                  onClick={() => handleOpenDetails({ ...expense, notes: expense.notes || expense.description })}
                 >
                   <div>
                     <p className="expense-category">{expense.category}</p>
-                    <p className="expense-date">{expense.date}</p>
+                    <p className="expense-date">{new Date(expense.date).toLocaleDateString()}</p>
                   </div>
-                  <span className="expense-amount">{expense.amount}</span>
+                  <span className="expense-amount">₹{expense.amount.toLocaleString()}</span>
                 </button>
               </article>
             ))}

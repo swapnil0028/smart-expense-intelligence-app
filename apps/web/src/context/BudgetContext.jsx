@@ -1,6 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react'
-import { currentBudget, previousBudgets } from '../data/mockBudgets'
 
 const BudgetContext = createContext(null)
 const STORAGE_KEY = 'expenseAppBudgetState'
@@ -8,8 +7,8 @@ const STORAGE_KEY = 'expenseAppBudgetState'
 function getInitialBudgetState() {
   if (typeof window === 'undefined') {
     return {
-      currentBudget,
-      previousBudgets,
+      currentBudget: null,
+      previousBudgets: [],
       dashboardBudget: '',
     }
   }
@@ -18,8 +17,8 @@ function getInitialBudgetState() {
 
   if (!storedValue) {
     return {
-      currentBudget,
-      previousBudgets,
+      currentBudget: null,
+      previousBudgets: [],
       dashboardBudget: '',
     }
   }
@@ -28,8 +27,8 @@ function getInitialBudgetState() {
     return JSON.parse(storedValue)
   } catch (error) {
     return {
-      currentBudget,
-      previousBudgets,
+      currentBudget: null,
+      previousBudgets: [],
       dashboardBudget: '',
     }
   }
